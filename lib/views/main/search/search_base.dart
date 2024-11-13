@@ -98,37 +98,55 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<SearchViewModel>();
+    return ChangeNotifierProvider<SearchViewModel>(
+      create: (_) => SearchViewModel(),
+      // builder를 사용하여 Provider에 접근 가능한 새로운 BuildContext를 얻습니다
+      builder: (context, child) {
+        final viewModel = context.watch<SearchViewModel>();
 
-    return Container(
-      margin: const EdgeInsets.all(10),
-      height: 40,
-      decoration: BoxDecoration(
-        color: const Color(0xffeeeeee),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                hintText: '지역, 메뉴, 매장명 검색',
+        return Container(
+          margin: const EdgeInsets.all(10),
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xffeeeeee),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: '지역, 메뉴, 매장명 검색',
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        viewModel.clearSearch(); // ViewModel의 메서드 호출
+                      },
+                    )
+                        : null,
+                  ),
+                  onSubmitted: (value) {
+                    viewModel.searchCafes(value); // ViewModel의 검색 메서드 호출
+                    _navigateToSearchForm(context, value);
+                  },
+                ),
               ),
-              onSubmitted: (value) {
-                _navigateToSearchForm(context, value);
-              },
-            ),
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  final keyword = _searchController.text;
+                  viewModel.searchCafes(keyword);
+                  _navigateToSearchForm(context, keyword);
+                },
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              _navigateToSearchForm(context, _searchController.text);
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -142,8 +160,13 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
       );
     }
   }
-}
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+}
 // 검색 키워드 섹션
 class SearchKeyword extends StatelessWidget {
   final String title;
